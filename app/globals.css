@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  --background: #efe2d6;
+  --foreground: #2b1c1a;
+
+  --vala-sand: #efe2d6;
+  --vala-cream: #f8efea;
+  --vala-soft: #ead0c6;
+  --vala-line: #e8d0c5;
+  --vala-mauve: #9a6d65;
+  --vala-body: #5a4744;
+  --vala-muted: #7a6661;
+  --vala-ink: #2b1c1a;
+  --vala-deep: #311d1b;
+  --vala-burgundy: #7c2d2d;
+  --vala-navy: #25154c;
+  --vala-gold: #b88b63;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+summary {
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}

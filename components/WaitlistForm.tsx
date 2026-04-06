@@ -64,10 +64,10 @@ export default function WaitlistForm({
     >
       <div>
         <p className="text-lg font-semibold text-[var(--vala-deep)]">
-          Get Membership Details + 40% Off
+          Get Membership Details + 40% Off (Limited Offer)
         </p>
         <p className="mt-1 text-sm text-[var(--vala-muted)]">
-          Enter your email below to receive full membership information and your 40% off first month coupon.
+          Enter your email below to receive full membership information and your limited-time 40% off first month coupon.
         </p>
       </div>
 

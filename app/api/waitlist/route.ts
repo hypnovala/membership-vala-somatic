@@ -1,5 +1,42 @@
 import { NextResponse } from "next/server";
 
+type WaitlistPayload = {
+  email: string;
+  firstName: string;
+  source: string;
+  brand: string;
+};
+
+async function sendToWebhook(webhookUrl: string, payload: WaitlistPayload) {
+  return fetch(webhookUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+async function sendToGmailAddress(recipient: string, payload: WaitlistPayload) {
+  const encodedRecipient = encodeURIComponent(recipient);
+
+  return fetch(`https://formsubmit.co/ajax/${encodedRecipient}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      _subject: `VALA Waitlist: ${payload.email}`,
+      _template: "table",
+      email: payload.email,
+      firstName: payload.firstName,
+      source: payload.source,
+      brand: payload.brand,
+    }),
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
@@ -19,30 +56,29 @@ export async function POST(request: Request) {
       );
     }
 
-    const webhookUrl = process.env.WAITLIST_WEBHOOK_URL;
+    const payload: WaitlistPayload = {
+      email,
+      firstName,
+      source,
+      brand: "VALA Somatic Membership",
+    };
 
-    if (!webhookUrl) {
+    const webhookUrl = process.env.WAITLIST_WEBHOOK_URL;
+    const gmailRecipient = process.env.WAITLIST_GMAIL_TO;
+
+    if (!webhookUrl && !gmailRecipient) {
       return NextResponse.json(
         {
           message:
-            "Waitlist is not fully configured yet. Add WAITLIST_WEBHOOK_URL in Vercel to enable submissions.",
+            "Waitlist is not configured. Set WAITLIST_WEBHOOK_URL or WAITLIST_GMAIL_TO in Vercel.",
         },
         { status: 503 },
       );
     }
 
-    const upstreamResponse = await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        firstName,
-        source,
-        brand: "VALA Somatic Membership",
-      }),
-    });
+    const upstreamResponse = webhookUrl
+      ? await sendToWebhook(webhookUrl, payload)
+      : await sendToGmailAddress(gmailRecipient as string, payload);
 
     if (!upstreamResponse.ok) {
       return NextResponse.json(

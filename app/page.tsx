@@ -416,19 +416,16 @@ export default function Page() {
               <p className="mt-5 leading-8 text-[#efe8ff]">
                 The app gives core members a practical daily support layer before moving into the deeper identity work and premium support pathways.
               </p>
-              <div className="mt-6 rounded-[26px] bg-white/10 p-6">
-                <h4 className="text-2xl font-semibold">Inside the app</h4>
-                <ul className="mt-4 space-y-3 text-[#efe8ff]">
+              <div className="mt-6 rounded-[26px] bg-[#46376d] p-6 sm:p-7">
+                <h4 className="text-[2rem] font-semibold leading-tight text-white">Inside the app</h4>
+                <ul className="mt-4 space-y-3 text-[1.08rem] text-[#f3edff]">
                   {appFeatures.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
                 </ul>
-                <a
-                  href="https://somatic-nurse-app.vercel.app/"
-                  className="mt-6 inline-flex rounded-full bg-white px-5 py-3 font-medium text-[var(--vala-navy)]"
-                >
+                <span className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-[1.05rem] font-medium text-[var(--vala-navy)]">
                   Explore App Benefit
-                </a>
+                </span>
               </div>
             </div>
 

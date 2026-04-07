@@ -410,7 +410,11 @@ export default function Page() {
                 The app gives core members a practical daily support layer before moving into the deeper identity work and premium support pathways.
               </p>
               <div className="mt-6 rounded-[26px] border border-dashed border-white/40 bg-[#46376d] p-6 text-center text-[#e8e0ff] sm:p-7">
-                <p className="px-6 text-lg">Image placeholder — upload your app screenshot to replace this block.</p>
+                <img
+                  src="/app-screenshot.png"
+                  alt="Brock Somatic Check-In app screenshot"
+                  className="mx-auto w-full max-w-[520px] rounded-[18px]"
+                />
               </div>
             </div>
 

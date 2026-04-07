@@ -69,13 +69,6 @@ const introOfferExclusions = [
   "No private Houston hybrid service",
 ];
 
-const appFeatures = [
-  "Quick nervous system check-ins",
-  "Simple supportive prompts",
-  "Somatic reset suggestions",
-  "A grounded bridge between stress and calm",
-];
-
 const premiumFeatures = [
   "Monthly private 1:1 call with Brock",
   "Priority access to private Houston bodywork services",
@@ -416,19 +409,12 @@ export default function Page() {
               <p className="mt-5 leading-8 text-[#efe8ff]">
                 The app gives core members a practical daily support layer before moving into the deeper identity work and premium support pathways.
               </p>
-              <div className="mt-6 rounded-[26px] bg-white/10 p-6">
-                <h4 className="text-2xl font-semibold">Inside the app</h4>
-                <ul className="mt-4 space-y-3 text-[#efe8ff]">
-                  {appFeatures.map((item) => (
-                    <li key={item}>• {item}</li>
-                  ))}
-                </ul>
-                <a
-                  href="https://somatic-nurse-app.vercel.app/"
-                  className="mt-6 inline-flex rounded-full bg-white px-5 py-3 font-medium text-[var(--vala-navy)]"
-                >
-                  Explore App Benefit
-                </a>
+              <div className="mt-6 rounded-[26px] border border-dashed border-white/40 bg-[#46376d] p-6 text-center text-[#e8e0ff] sm:p-7">
+                <img
+                  src="/app-screenshot.png"
+                  alt="Brock Somatic Check-In app screenshot"
+                  className="mx-auto w-full max-w-[520px] rounded-[18px]"
+                />
               </div>
             </div>
 

@@ -160,7 +160,10 @@ export default function Page() {
                   Intro video
                 </p>
                 <video
+                  autoPlay
                   controls
+                  muted
+                  playsInline
                   preload="none"
                   className="w-full rounded-[18px] bg-[#eaded7]"
                 >
@@ -170,12 +173,6 @@ export default function Page() {
                   />
                   Your browser does not support the video tag.
                 </video>
-                <p className="mt-3 text-xs text-[#735b57]">
-                  Video source:{" "}
-                  <span className="font-medium">
-                    https://hypnoticdreamtv.com/wp-content/uploads/2026/04/VALA_Intro0406_01.mp4
-                  </span>
-                </p>
               </div>
             </div>
           </aside>

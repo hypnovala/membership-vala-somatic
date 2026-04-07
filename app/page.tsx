@@ -409,10 +409,8 @@ export default function Page() {
               <p className="mt-5 leading-8 text-[#efe8ff]">
                 The app gives core members a practical daily support layer before moving into the deeper identity work and premium support pathways.
               </p>
-              <div className="mt-6 rounded-[26px] border border-dashed border-white/40 bg-[#46376d] p-6 sm:p-7">
-                <div className="flex min-h-[260px] items-center justify-center rounded-[20px] bg-[#3d2f62] text-center text-[#e8e0ff]">
-                  <p className="px-6 text-lg">Image placeholder — upload your app screenshot to replace this block.</p>
-                </div>
+              <div className="mt-6 rounded-[26px] border border-dashed border-white/40 bg-[#46376d] p-6 text-center text-[#e8e0ff] sm:p-7">
+                <p className="px-6 text-lg">Image placeholder — upload your app screenshot to replace this block.</p>
               </div>
             </div>
 

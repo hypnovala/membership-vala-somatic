@@ -8,35 +8,44 @@ type WaitlistPayload = {
   brand: string;
 };
 
-async function sendToWebhook(webhookUrl: string, payload: WaitlistPayload) {
-  return fetch(webhookUrl, {
+type FormSubmitPayload = WaitlistPayload & {
+  _subject: string;
+  _template: "table";
+};
+
+async function postJson(
+  url: string,
+  payload: WaitlistPayload | FormSubmitPayload,
+  extraHeaders: Record<string, string> = {},
+) {
+  return fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...extraHeaders,
     },
     body: JSON.stringify(payload),
   });
 }
 
+async function sendToWebhook(webhookUrl: string, payload: WaitlistPayload) {
+  return postJson(webhookUrl, payload);
+}
+
 async function sendToGmailAddress(recipient: string, payload: WaitlistPayload) {
   const encodedRecipient = encodeURIComponent(recipient);
 
-  return fetch(`https://formsubmit.co/ajax/${encodedRecipient}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      _subject: `VALA Waitlist: ${payload.email}`,
-      _template: "table",
-      email: payload.email,
-      firstName: payload.firstName,
-      source: payload.source,
-      membershipInterest: payload.membershipInterest,
-      brand: payload.brand,
-    }),
-  });
+  const formSubmitPayload: FormSubmitPayload = {
+    _subject: `VALA Waitlist: ${payload.email}`,
+    _template: "table",
+    ...payload,
+  };
+
+  return postJson(
+    `https://formsubmit.co/ajax/${encodedRecipient}`,
+    formSubmitPayload,
+    { Accept: "application/json" },
+  );
 }
 
 export async function POST(request: Request) {

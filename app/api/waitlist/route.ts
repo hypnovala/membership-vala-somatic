@@ -7,7 +7,7 @@ type WaitlistPayload = {
   inHouston: boolean;
 };
 
-type SendMailResult = {
+type MailResult = {
   accepted?: string[];
   rejected?: string[];
   response?: string;
@@ -31,7 +31,7 @@ const isValidEmail = (email: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
 
-const wasAccepted = (result: SendMailResult, expectedRecipient: string): boolean => {
+const wasAccepted = (result: MailResult, expectedRecipient: string): boolean => {
   if (!Array.isArray(result.accepted)) return false;
 
   const normalizedRecipient = expectedRecipient.trim().toLowerCase();
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
           <p>Email: ${email}</p>
           <p>In Houston: ${inHouston ? "Yes" : "No"}</p>
         `,
-      })) as SendMailResult;
+      })) as MailResult;
 
       console.log("Team notification result:", {
         accepted: teamNotificationResult.accepted,
@@ -114,36 +114,48 @@ export async function POST(req: Request) {
       console.error("Team notification send failed:", notifyError);
     }
 
+    const html = `
+      <div style="font-family: Georgia, 'Times New Roman', serif; color: #2b1c1a; line-height: 1.6;">
+        <p>Hi ${firstName},</p>
+
+        <p>You’re officially on the <strong>VALA Somatic Membership</strong> waitlist.</p>
+
+        <p>We’ll send you updates about early access, the intro offer, and next steps as they open.</p>
+
+        <p>For now, keep an eye on your inbox.</p>
+
+        <p>With care,<br />Brock John<br />VALA Somatic</p>
+      </div>
+    `;
+
+    const text = [
+      `Hi ${firstName},`,
+      "",
+      "You’re officially on the VALA Somatic Membership waitlist.",
+      "",
+      "We’ll send you updates about early access, the intro offer, and next steps as they open.",
+      "",
+      "With care,",
+      "Brock John",
+      "VALA Somatic",
+    ].join("\n");
+
     const confirmationResult = (await transporter.sendMail({
-      from: fromAddress,
+      from: `"VALA Somatic" <${gmailUser}>`,
       to: email,
       replyTo: gmailUser,
-      subject: "You’re on the VALA Somatic waitlist",
-      text: [
-        `Hi ${firstName},`,
-        "",
-        "You’re officially on the VALA Somatic waitlist.",
-        "We’ll share updates soon.",
-        "",
-        "— VALA Somatic",
-      ].join("\n"),
-      html: `
-        <p>Hi ${firstName},</p>
-        <p>You’re officially on the <strong>VALA Somatic</strong> waitlist.</p>
-        <p>We’ll share updates soon.</p>
-        <p>— VALA Somatic</p>
-      `,
-    })) as SendMailResult;
+      subject: "You’re on the waitlist — VALA Somatic",
+      text,
+      html,
+    })) as MailResult;
 
-    console.log("Confirmation result:", {
-      accepted: confirmationResult.accepted,
-      rejected: confirmationResult.rejected,
-      response: confirmationResult.response,
-    });
+    console.log("Confirmation result:", confirmationResult);
 
     if (!wasAccepted(confirmationResult, email)) {
+      console.error("Confirmation email not accepted:", confirmationResult);
+
       return NextResponse.json(
-        { message: "Confirmation email could not be accepted for delivery." },
+        { message: "Your signup was saved, but the confirmation email was not accepted for delivery." },
         { status: 502 },
       );
     }

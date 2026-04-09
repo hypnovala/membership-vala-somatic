@@ -91,11 +91,29 @@ export async function POST(request: Request) {
       );
     }
 
-    const webhookUrl = process.env.WAITLIST_WEBHOOK_URL;
-    const gmailRecipient = process.env.WAITLIST_GMAIL_TO;
+    const payload: WaitlistPayload = {
+      email,
+      firstName,
+      source,
+      membershipInterest,
+      brand: "VALA Somatic Membership",
+    };
+
+    const webhookUrl =
+      process.env.WAITLIST_WEBHOOK_URL?.trim() || process.env.WAITLIST_WEBHOOK?.trim();
+    const gmailRecipient =
+      process.env.WAITLIST_GMAIL_TO?.trim() ||
+      process.env.WAITLIST_EMAIL_TO?.trim() ||
+      process.env.WAITLIST_TO?.trim();
 
     if (!webhookUrl && !gmailRecipient) {
-      console.warn("Waitlist endpoint called without delivery configuration");
+      console.warn("Waitlist endpoint called without delivery configuration", {
+        hasWaitlistWebhookUrl: Boolean(process.env.WAITLIST_WEBHOOK_URL),
+        hasWaitlistWebhook: Boolean(process.env.WAITLIST_WEBHOOK),
+        hasWaitlistGmailTo: Boolean(process.env.WAITLIST_GMAIL_TO),
+        hasWaitlistEmailTo: Boolean(process.env.WAITLIST_EMAIL_TO),
+        hasWaitlistTo: Boolean(process.env.WAITLIST_TO),
+      });
 
       return NextResponse.json(
         {

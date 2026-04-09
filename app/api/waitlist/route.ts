@@ -70,7 +70,6 @@ export async function POST(req: Request) {
       },
     });
 
-    await transporter.verify();
 
     try {
       const teamNotificationResult = await transporter.sendMail({

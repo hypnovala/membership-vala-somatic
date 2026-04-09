@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
+type MembershipInterest = "$7" | "$39";
+
 type WaitlistPayload = {
   firstName: string;
   email: string;

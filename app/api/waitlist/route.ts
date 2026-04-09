@@ -4,6 +4,7 @@ type WaitlistPayload = {
   email: string;
   firstName: string;
   source: string;
+  membershipInterest: "$7" | "$39";
   brand: string;
 };
 
@@ -32,6 +33,7 @@ async function sendToGmailAddress(recipient: string, payload: WaitlistPayload) {
       email: payload.email,
       firstName: payload.firstName,
       source: payload.source,
+      membershipInterest: payload.membershipInterest,
       brand: payload.brand,
     }),
   });
@@ -43,11 +45,13 @@ export async function POST(request: Request) {
       email?: string;
       firstName?: string;
       source?: string;
+      membershipInterest?: string;
     };
 
     const email = body.email?.trim().toLowerCase();
     const firstName = body.firstName?.trim() || "";
     const source = body.source?.trim() || "site";
+    const membershipInterest = body.membershipInterest === "$39" ? "$39" : "$7";
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
@@ -60,6 +64,7 @@ export async function POST(request: Request) {
       email,
       firstName,
       source,
+      membershipInterest,
       brand: "VALA Somatic Membership",
     };
 

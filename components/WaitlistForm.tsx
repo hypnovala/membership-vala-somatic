@@ -15,6 +15,7 @@ export default function WaitlistForm({
 }: WaitlistFormProps) {
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
+  const [membershipInterest, setMembershipInterest] = useState<"$7" | "$39">("$7");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -33,6 +34,7 @@ export default function WaitlistForm({
           email,
           firstName,
           source,
+          membershipInterest,
         }),
       });
 
@@ -46,6 +48,7 @@ export default function WaitlistForm({
       setMessage(data.message || "You’re on the waitlist.");
       setEmail("");
       setFirstName("");
+      setMembershipInterest("$7");
     } catch (error) {
       const nextMessage =
         error instanceof Error
@@ -89,6 +92,22 @@ export default function WaitlistForm({
           required
           className="w-full rounded-full border border-[var(--vala-line)] bg-white px-5 py-3 text-[var(--vala-deep)] outline-none transition focus:border-[var(--vala-gold)]"
         />
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-medium text-[var(--vala-deep)]" htmlFor="membershipInterest">
+          Membership option
+        </label>
+        <select
+          id="membershipInterest"
+          name="membershipInterest"
+          value={membershipInterest}
+          onChange={(event) => setMembershipInterest(event.target.value as "$7" | "$39")}
+          className="w-full rounded-full border border-[var(--vala-line)] bg-white px-5 py-3 text-[var(--vala-deep)] outline-none transition focus:border-[var(--vala-gold)]"
+        >
+          <option value="$7">$7 Waitlist Sign Up</option>
+          <option value="$39">$39 Membership</option>
+        </select>
       </div>
 
       <div className={compact ? "flex flex-col gap-3 sm:flex-row sm:items-center" : "flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"}>

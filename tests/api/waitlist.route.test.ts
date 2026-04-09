@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, it, mock } from "node:test";
 
+import nodemailer from "nodemailer";
 import { GET, POST } from "../../app/api/waitlist/route";
 
 describe("waitlist API route", () => {
@@ -54,8 +55,16 @@ describe("waitlist API route", () => {
     assert.equal(body.message, "Please provide a valid email address.");
   });
 
-  it("returns 200 and success true when both emails are accepted", async () => {
-    mock.method(globalThis, "fetch", async () => new Response(null, { status: 200 }));
+  it("returns 200 and success true when confirmation email is accepted", async () => {
+    const sendMailMock = mock.fn(async (_message: unknown) => ({
+      accepted: ["member@example.com"],
+      rejected: [],
+      response: "250 queued",
+    }));
+
+    mock.method(nodemailer, "createTransport", () => ({
+      sendMail: sendMailMock,
+    }));
 
     const request = new Request("http://localhost/api/waitlist", {
       method: "POST",
@@ -69,10 +78,22 @@ describe("waitlist API route", () => {
     assert.equal(response.status, 200);
     assert.equal(body.success, true);
     assert.equal(body.message, "Thank you — check your email for details.");
+    assert.equal(sendMailMock.mock.callCount(), 2);
   });
 
-  it("returns 500 when team notification is not accepted", async () => {
-    mock.method(globalThis, "fetch", async () => new Response(null, { status: 500 }));
+  it("returns 502 when confirmation email is not accepted", async () => {
+    const sendMailMock = mock.fn(async (message: unknown) => {
+      const typed = message as { to?: string };
+      if (typed.to === "member@example.com") {
+        return { accepted: ["other@example.com"], rejected: ["member@example.com"], response: "550" };
+      }
+
+      return { accepted: ["team@example.com"], rejected: [], response: "250" };
+    });
+
+    mock.method(nodemailer, "createTransport", () => ({
+      sendMail: sendMailMock,
+    }));
 
     const request = new Request("http://localhost/api/waitlist", {
       method: "POST",
@@ -83,7 +104,8 @@ describe("waitlist API route", () => {
     const response = await POST(request);
     const body = await response.json();
 
-    assert.equal(response.status, 500);
-    assert.equal(body.message, "Unable to send waitlist notification email.");
+    assert.equal(response.status, 502);
+    assert.equal(body.message, "Your signup was saved, but the confirmation email was not accepted for delivery.");
+    assert.equal(sendMailMock.mock.callCount(), 2);
   });
 });

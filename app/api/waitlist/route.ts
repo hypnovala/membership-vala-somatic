@@ -18,27 +18,43 @@ type WaitlistInput = {
   membershipInterest?: string;
 };
 
+type FormSubmitPayload = WaitlistPayload & {
+  _subject: string;
+  _template: "table";
+};
 
-async function sendToWebhook(webhookUrl: string, payload: WaitlistPayload) {
-  return fetch(webhookUrl, {
+async function postJson(
+  url: string,
+  payload: WaitlistPayload | FormSubmitPayload,
+  extraHeaders: Record<string, string> = {},
+) {
+  return fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(headers || {}),
+      ...extraHeaders,
     },
     body: JSON.stringify(payload),
   });
 }
 
-async function sendToFormSubmit(recipient: string, payload: WaitlistPayload) {
+async function sendToWebhook(webhookUrl: string, payload: WaitlistPayload) {
+  return postJson(webhookUrl, payload);
+}
+
+async function sendToGmailAddress(recipient: string, payload: WaitlistPayload) {
   const encodedRecipient = encodeURIComponent(recipient);
+
+  const formSubmitPayload: FormSubmitPayload = {
+    _subject: `VALA Waitlist: ${payload.email}`,
+    _template: "table",
+    ...payload,
+  };
 
   return postJson(
     `https://formsubmit.co/ajax/${encodedRecipient}`,
-    payload,
-    {
-      Accept: "application/json",
-    },
+    formSubmitPayload,
+    { Accept: "application/json" },
   );
 }
 

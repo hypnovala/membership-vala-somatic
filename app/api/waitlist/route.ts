@@ -1,103 +1,112 @@
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
 type WaitlistPayload = {
-  email: string;
   firstName: string;
-  source: string;
-  membershipInterest: "$7" | "$39";
-  brand: string;
+  email: string;
+  inHouston: boolean;
 };
 
-async function sendToWebhook(webhookUrl: string, payload: WaitlistPayload) {
-  return fetch(webhookUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+const isValidPayload = (value: unknown): value is WaitlistPayload => {
+  if (!value || typeof value !== "object") return false;
+
+  const payload = value as Record<string, unknown>;
+
+  return (
+    typeof payload.firstName === "string" &&
+    payload.firstName.trim().length > 0 &&
+    typeof payload.email === "string" &&
+    payload.email.trim().length > 0 &&
+    typeof payload.inHouston === "boolean"
+  );
+};
+
+const isValidEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+export async function GET() {
+  return NextResponse.json(
+    {
+      message:
+        "Waitlist endpoint is live. Send a POST request with firstName, email, and inHouston.",
     },
-    body: JSON.stringify(payload),
-  });
+    { status: 200 },
+  );
 }
 
-async function sendToGmailAddress(recipient: string, payload: WaitlistPayload) {
-  const encodedRecipient = encodeURIComponent(recipient);
-
-  return fetch(`https://formsubmit.co/ajax/${encodedRecipient}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      _subject: `VALA Waitlist: ${payload.email}`,
-      _template: "table",
-      email: payload.email,
-      firstName: payload.firstName,
-      source: payload.source,
-      membershipInterest: payload.membershipInterest,
-      brand: payload.brand,
-    }),
-  });
-}
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const body = (await request.json()) as {
-      email?: string;
-      firstName?: string;
-      source?: string;
-      membershipInterest?: string;
-    };
+    const body: unknown = await req.json();
 
-    const email = body.email?.trim().toLowerCase();
-    const firstName = body.firstName?.trim() || "";
-    const source = body.source?.trim() || "site";
-    const membershipInterest = body.membershipInterest === "$39" ? "$39" : "$7";
+    if (!isValidPayload(body)) {
+      return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
+    }
 
-    if (!email || !email.includes("@")) {
+    const { firstName, email, inHouston } = body;
+
+    if (!isValidEmail(email)) {
       return NextResponse.json(
-        { message: "Please enter a valid email address." },
+        { message: "Please provide a valid email address." },
         { status: 400 },
       );
     }
 
-    const payload: WaitlistPayload = {
-      email,
-      firstName,
-      source,
-      membershipInterest,
-      brand: "VALA Somatic Membership",
-    };
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 
-    const webhookUrl = process.env.WAITLIST_WEBHOOK_URL;
-    const gmailRecipient = process.env.WAITLIST_GMAIL_TO;
-
-    if (!webhookUrl && !gmailRecipient) {
+    if (!gmailUser || !gmailAppPassword) {
       return NextResponse.json(
-        {
-          message:
-            "Waitlist is not configured. Set WAITLIST_WEBHOOK_URL or WAITLIST_GMAIL_TO in Vercel.",
-        },
-        { status: 503 },
+        { message: "Server email configuration is missing." },
+        { status: 500 },
       );
     }
 
-    const upstreamResponse = webhookUrl
-      ? await sendToWebhook(webhookUrl, payload)
-      : await sendToGmailAddress(gmailRecipient as string, payload);
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: gmailUser,
+        pass: gmailAppPassword,
+      },
+    });
 
-    if (!upstreamResponse.ok) {
-      return NextResponse.json(
-        { message: "The waitlist service is unavailable right now. Please try again shortly." },
-        { status: 502 },
-      );
+
+    try {
+      const teamNotificationResult = await transporter.sendMail({
+        from: gmailUser,
+        to: gmailUser,
+        subject: "New Waitlist Signup",
+        text: [
+          "New waitlist signup received:",
+          `First name: ${firstName}`,
+          `Email: ${email}`,
+          `In Houston: ${inHouston ? "Yes" : "No"}`,
+        ].join("\n"),
+      });
+
+      console.log("Team notification result:", teamNotificationResult);
+    } catch (notifyError) {
+      console.error("Team notification send failed:", notifyError);
     }
+
+    const confirmationResult = await transporter.sendMail({
+      from: gmailUser,
+      to: email,
+      subject: "You’re on the waitlist — Somatic Nurse",
+      html: `<p>You're officially in, ${firstName}.</p>`,
+    });
+
+    console.log("Confirmation result:", confirmationResult);
 
     return NextResponse.json({
-      message: "You’re on the list. Watch your inbox for the next VALA update.",
+      success: true,
+      message: "Thank you — check your email for details.",
     });
-  } catch {
+  } catch (error) {
+    console.error("Waitlist API error:", error);
+
     return NextResponse.json(
-      { message: "Unable to submit right now. Please try again shortly." },
+      { message: "Something went wrong. Please try again." },
       { status: 500 },
     );
   }

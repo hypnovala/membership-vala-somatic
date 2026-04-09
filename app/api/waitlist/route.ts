@@ -148,6 +148,15 @@ export async function POST(req: Request) {
       );
     }
 
+    const confirmationResult = await transporter.sendMail({
+      from: gmailUser,
+      to: email,
+      subject: "You’re on the waitlist — Somatic Nurse",
+      html: `<p>You're officially in, ${firstName}.</p>`,
+    });
+
+    console.log("Confirmation result:", confirmationResult);
+
     return NextResponse.json({
       success: true,
       message: "Thank you — check your email for details.",

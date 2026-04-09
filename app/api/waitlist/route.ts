@@ -72,12 +72,13 @@ export async function POST(request: Request) {
     const gmailRecipient = process.env.WAITLIST_GMAIL_TO;
 
     if (!webhookUrl && !gmailRecipient) {
+      console.warn("Waitlist endpoint called without delivery configuration");
+
       return NextResponse.json(
         {
-          message:
-            "Waitlist is not configured. Set WAITLIST_WEBHOOK_URL or WAITLIST_GMAIL_TO in Vercel.",
+          message: "Waitlist is not configured. Please contact support.",
         },
-        { status: 503 },
+        { status: 202 },
       );
     }
 
@@ -86,6 +87,13 @@ export async function POST(request: Request) {
       : await sendToGmailAddress(gmailRecipient as string, payload);
 
     if (!upstreamResponse.ok) {
+      const upstreamBody = await upstreamResponse.text();
+      console.error("Waitlist upstream request failed", {
+        status: upstreamResponse.status,
+        statusText: upstreamResponse.statusText,
+        bodyPreview: upstreamBody.slice(0, 500),
+      });
+
       return NextResponse.json(
         { message: "The waitlist service is unavailable right now. Please try again shortly." },
         { status: 502 },
@@ -95,7 +103,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: "You’re on the list. Watch your inbox for the next VALA update.",
     });
-  } catch {
+  } catch (error) {
+    console.error("Waitlist handler crashed", error);
+
     return NextResponse.json(
       { message: "Unable to submit right now. Please try again shortly." },
       { status: 500 },

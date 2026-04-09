@@ -23,6 +23,27 @@ type FormSubmitPayload = WaitlistPayload & {
   _template: "table";
 };
 
+const WAITLIST_NOT_CONFIGURED_MESSAGE =
+  "Waitlist is not configured. Please contact support.";
+
+function normalizePayload(input: WaitlistInput): WaitlistPayload | null {
+  const email = input.email?.trim();
+  if (!email) return null;
+
+  const interest = input.membershipInterest;
+  const membershipInterest: MembershipInterest =
+    interest === "$7" || interest === "$39" ? interest : "$39";
+
+  return {
+    email,
+    firstName: input.firstName?.trim() ?? "",
+    source: input.source?.trim() ?? "waitlist",
+    membershipInterest,
+    brand: "VALA",
+    submittedAt: new Date().toISOString(),
+  };
+}
+
 async function postJson(
   url: string,
   payload: WaitlistPayload | FormSubmitPayload,
@@ -84,7 +105,7 @@ export async function POST(request: Request) {
 
     const upstreamResponse = webhookUrl
       ? await postJson(webhookUrl, payload)
-      : await sendToFormSubmit(gmailRecipient as string, payload);
+      : await sendToGmailAddress(gmailRecipient as string, payload);
 
     if (!upstreamResponse.ok) {
       return NextResponse.json(

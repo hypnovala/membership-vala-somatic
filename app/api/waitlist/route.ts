@@ -68,16 +68,27 @@ export async function POST(request: Request) {
       brand: "VALA Somatic Membership",
     };
 
-    const webhookUrl = process.env.WAITLIST_WEBHOOK_URL;
-    const gmailRecipient = process.env.WAITLIST_GMAIL_TO;
+    const webhookUrl =
+      process.env.WAITLIST_WEBHOOK_URL?.trim() || process.env["WAITLIST_WEBHOOK"]?.trim();
+    const gmailRecipient =
+      process.env.WAITLIST_GMAIL_TO?.trim() ||
+      process.env["WAITLIST_EMAIL_TO"]?.trim() ||
+      process.env["WAITLIST_TO"]?.trim();
 
     if (!webhookUrl && !gmailRecipient) {
+      console.warn("Waitlist endpoint called without delivery configuration", {
+        hasWaitlistWebhookUrl: Boolean(process.env.WAITLIST_WEBHOOK_URL),
+        hasWaitlistWebhook: Boolean(process.env["WAITLIST_WEBHOOK"]),
+        hasWaitlistGmailTo: Boolean(process.env.WAITLIST_GMAIL_TO),
+        hasWaitlistEmailTo: Boolean(process.env["WAITLIST_EMAIL_TO"]),
+        hasWaitlistTo: Boolean(process.env["WAITLIST_TO"]),
+      });
+
       return NextResponse.json(
         {
-          message:
-            "Waitlist is not configured. Set WAITLIST_WEBHOOK_URL or WAITLIST_GMAIL_TO in Vercel.",
+          message: "Waitlist is not configured. Please contact support.",
         },
-        { status: 503 },
+        { status: 202 },
       );
     }
 
@@ -86,6 +97,13 @@ export async function POST(request: Request) {
       : await sendToGmailAddress(gmailRecipient as string, payload);
 
     if (!upstreamResponse.ok) {
+      const upstreamBody = await upstreamResponse.text();
+      console.error("Waitlist upstream request failed", {
+        status: upstreamResponse.status,
+        statusText: upstreamResponse.statusText,
+        bodyPreview: upstreamBody.slice(0, 500),
+      });
+
       return NextResponse.json(
         { message: "The waitlist service is unavailable right now. Please try again shortly." },
         { status: 502 },
@@ -95,7 +113,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: "You’re on the list. Watch your inbox for the next VALA update.",
     });
-  } catch {
+  } catch (error) {
+    console.error("Waitlist handler crashed", error);
+
     return NextResponse.json(
       { message: "Unable to submit right now. Please try again shortly." },
       { status: 500 },

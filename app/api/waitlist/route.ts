@@ -1,72 +1,95 @@
 import { NextResponse } from "next/server";
 
+type MembershipInterest = "$7" | "$39";
+
 type WaitlistPayload = {
   email: string;
   firstName: string;
   source: string;
-  membershipInterest: "$7" | "$39";
+  membershipInterest: MembershipInterest;
   brand: string;
+  submittedAt: string;
 };
 
-async function sendToWebhook(webhookUrl: string, payload: WaitlistPayload) {
-  return fetch(webhookUrl, {
+type WaitlistInput = {
+  email?: string;
+  firstName?: string;
+  source?: string;
+  membershipInterest?: string;
+};
+
+type FormSubmitPayload = WaitlistPayload & {
+  _subject: string;
+  _template: "table";
+};
+
+const WAITLIST_NOT_CONFIGURED_MESSAGE =
+  "Waitlist is not configured. Please contact support.";
+
+function normalizePayload(input: WaitlistInput): WaitlistPayload | null {
+  const email = input.email?.trim();
+  if (!email) return null;
+
+  const interest = input.membershipInterest;
+  const membershipInterest: MembershipInterest =
+    interest === "$7" || interest === "$39" ? interest : "$39";
+
+  return {
+    email,
+    firstName: input.firstName?.trim() ?? "",
+    source: input.source?.trim() ?? "waitlist",
+    membershipInterest,
+    brand: "VALA",
+    submittedAt: new Date().toISOString(),
+  };
+}
+
+async function postJson(
+  url: string,
+  payload: WaitlistPayload | FormSubmitPayload,
+  extraHeaders: Record<string, string> = {},
+) {
+  return fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...extraHeaders,
     },
     body: JSON.stringify(payload),
   });
 }
 
+async function sendToWebhook(webhookUrl: string, payload: WaitlistPayload) {
+  return postJson(webhookUrl, payload);
+}
+
 async function sendToGmailAddress(recipient: string, payload: WaitlistPayload) {
   const encodedRecipient = encodeURIComponent(recipient);
 
-  return fetch(`https://formsubmit.co/ajax/${encodedRecipient}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      _subject: `VALA Waitlist: ${payload.email}`,
-      _template: "table",
-      email: payload.email,
-      firstName: payload.firstName,
-      source: payload.source,
-      membershipInterest: payload.membershipInterest,
-      brand: payload.brand,
-    }),
-  });
+  const formSubmitPayload: FormSubmitPayload = {
+    _subject: `VALA Waitlist: ${payload.email}`,
+    _template: "table",
+    ...payload,
+  };
+
+  return postJson(
+    `https://formsubmit.co/ajax/${encodedRecipient}`,
+    formSubmitPayload,
+    { Accept: "application/json" },
+  );
 }
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as {
-      email?: string;
-      firstName?: string;
-      source?: string;
-      membershipInterest?: string;
-    };
+    const body = (await request.json()) as WaitlistInput;
+    const payload = normalizePayload(body);
 
-    const email = body.email?.trim().toLowerCase();
-    const firstName = body.firstName?.trim() || "";
-    const source = body.source?.trim() || "site";
-    const membershipInterest = body.membershipInterest === "$39" ? "$39" : "$7";
-
-    if (!email || !email.includes("@")) {
+    if (!payload) {
       return NextResponse.json(
         { message: "Please enter a valid email address." },
         { status: 400 },
       );
     }
-
-    const payload: WaitlistPayload = {
-      email,
-      firstName,
-      source,
-      membershipInterest,
-      brand: "VALA Somatic Membership",
-    };
 
     const webhookUrl = process.env.WAITLIST_WEBHOOK_URL;
     const gmailRecipient = process.env.WAITLIST_GMAIL_TO;
@@ -83,7 +106,7 @@ export async function POST(request: Request) {
     }
 
     const upstreamResponse = webhookUrl
-      ? await sendToWebhook(webhookUrl, payload)
+      ? await postJson(webhookUrl, payload)
       : await sendToGmailAddress(gmailRecipient as string, payload);
 
     if (!upstreamResponse.ok) {
@@ -95,13 +118,17 @@ export async function POST(request: Request) {
       });
 
       return NextResponse.json(
-        { message: "The waitlist service is unavailable right now. Please try again shortly." },
+        {
+          message:
+            "The waitlist service is unavailable right now. Please try again shortly.",
+        },
         { status: 502 },
       );
     }
 
     return NextResponse.json({
-      message: "You’re on the list. Watch your inbox for the next VALA update.",
+      message:
+        "Success! Check your inbox for membership details and your limited-time offer.",
     });
   } catch (error) {
     console.error("Waitlist handler crashed", error);

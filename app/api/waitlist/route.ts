@@ -7,6 +7,12 @@ type WaitlistPayload = {
   inHouston: boolean;
 };
 
+type SendMailResult = {
+  accepted?: string[];
+  rejected?: string[];
+  response?: string;
+};
+
 const isValidPayload = (value: unknown): value is WaitlistPayload => {
   if (!value || typeof value !== "object") return false;
 
@@ -23,6 +29,13 @@ const isValidPayload = (value: unknown): value is WaitlistPayload => {
 
 const isValidEmail = (email: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const wasAccepted = (result: SendMailResult, expectedRecipient: string): boolean => {
+  if (!Array.isArray(result.accepted)) return false;
+
+  const normalizedRecipient = expectedRecipient.trim().toLowerCase();
+  return result.accepted.some((recipient) => recipient.trim().toLowerCase() === normalizedRecipient);
 };
 
 export async function GET() {
@@ -62,6 +75,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const fromAddress = `"VALA Somatic" <${gmailUser}>`;
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -70,23 +85,67 @@ export async function POST(req: Request) {
       },
     });
 
-
     try {
-      const teamNotificationResult = await transporter.sendMail({
-        from: gmailUser,
+      const teamNotificationResult = (await transporter.sendMail({
+        from: fromAddress,
         to: gmailUser,
-        subject: "New Waitlist Signup",
+        replyTo: gmailUser,
+        subject: "New VALA Somatic Waitlist Signup",
         text: [
-          "New waitlist signup received:",
+          "New VALA Somatic waitlist signup received:",
           `First name: ${firstName}`,
           `Email: ${email}`,
           `In Houston: ${inHouston ? "Yes" : "No"}`,
         ].join("\n"),
-      });
+        html: `
+          <p><strong>New VALA Somatic waitlist signup received:</strong></p>
+          <p>First name: ${firstName}</p>
+          <p>Email: ${email}</p>
+          <p>In Houston: ${inHouston ? "Yes" : "No"}</p>
+        `,
+      })) as SendMailResult;
 
-      console.log("Team notification result:", teamNotificationResult);
+      console.log("Team notification result:", {
+        accepted: teamNotificationResult.accepted,
+        rejected: teamNotificationResult.rejected,
+        response: teamNotificationResult.response,
+      });
     } catch (notifyError) {
       console.error("Team notification send failed:", notifyError);
+    }
+
+    const confirmationResult = (await transporter.sendMail({
+      from: fromAddress,
+      to: email,
+      replyTo: gmailUser,
+      subject: "You’re on the VALA Somatic waitlist",
+      text: [
+        `Hi ${firstName},`,
+        "",
+        "You’re officially on the VALA Somatic waitlist.",
+        "We’ll share updates soon.",
+        "",
+        "— VALA Somatic",
+      ].join("\n"),
+      html: `
+        <p>Hi ${firstName},</p>
+        <p>You’re officially on the <strong>VALA Somatic</strong> waitlist.</p>
+        <p>We’ll share updates soon.</p>
+        <p>— VALA Somatic</p>
+      `,
+    })) as SendMailResult;
+
+    console.log("Confirmation result:", {
+      accepted: confirmationResult.accepted,
+      rejected: confirmationResult.rejected,
+      response: confirmationResult.response,
+    });
+
+    if (!wasAccepted(confirmationResult, email)) {
+      return NextResponse.json(
+        { message: "Confirmation email could not be accepted for delivery." },
+        { status: 502 },
+      );
     }
 
     const confirmationResult = await transporter.sendMail({

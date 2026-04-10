@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
-
 type WaitlistFormProps = {
   buttonLabel?: string;
   compact?: boolean;
 };
 
 export default function WaitlistForm({
-  buttonLabel = "Join the Waitlist",
+  buttonLabel = "Click Here",
   compact = false,
 }: WaitlistFormProps) {
   const [firstName, setFirstName] = useState("");

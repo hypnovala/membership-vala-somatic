@@ -39,10 +39,27 @@ export default function WaitlistForm({
         }),
       });
 
-      const data = (await response.json()) as { message?: string };
+      const contentType = response.headers.get("content-type") || "";
+      const isJsonResponse = contentType.includes("application/json");
+      let data: { message?: string } = {};
+      let rawResponse = "";
+
+      if (isJsonResponse) {
+        data = (await response.json()) as { message?: string };
+      } else {
+        rawResponse = await response.text();
+        console.error("Waitlist API returned non-JSON response:", rawResponse);
+      }
 
       if (!response.ok) {
+        if (!isJsonResponse) {
+          throw new Error("We’re having trouble completing your signup right now. Please try again in a moment.");
+        }
         throw new Error(data.message || "Something went wrong.");
+      }
+
+      if (!isJsonResponse) {
+        throw new Error("We’re having trouble completing your signup right now. Please try again in a moment.");
       }
 
       setStatus("success");

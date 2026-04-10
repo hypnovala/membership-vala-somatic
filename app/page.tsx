@@ -107,7 +107,7 @@ export default function Page() {
               Start with the waitlist for launch updates, founding-member access, and the free Somatic Reset Guide.
             </p>
 
-            <WaitlistForm buttonLabel="Join the Waitlist" source="hero" />
+            <WaitlistForm buttonLabel="Click Here" ctaHref="#membership-details" />
 
             <div className="mt-6 flex flex-wrap gap-4">
               <a
@@ -377,7 +377,7 @@ export default function Page() {
           </div>
         </section>
 
-        <section id="membership" className="mt-10 grid gap-6 lg:grid-cols-[1fr_0.82fr]">
+        <section id="membership-details" className="mt-10 grid gap-6 lg:grid-cols-[1fr_0.82fr]">
           <div className="rounded-[38px] bg-[#f8efea] p-8 shadow-sm ring-1 ring-[#e8d0c5] sm:p-10">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a6d65]">Inside VALA</p>
             <h3 className="mt-3 text-4xl font-semibold leading-tight">What members receive</h3>
@@ -454,7 +454,7 @@ export default function Page() {
             Join the waitlist to get founding-member updates, launch access, and first notice when the $7 intro offer and premium pathway open.
           </p>
           <div className="mx-auto mt-8 max-w-3xl text-left">
-            <WaitlistForm buttonLabel="Join the Waitlist" source="final-cta" />
+            <WaitlistForm buttonLabel="Click Here" ctaHref="#membership-details" />
           </div>
           <p className="mt-6 text-sm text-[var(--vala-muted)]">
             Brock John • VALA Somatic Reset • Houston, Texas • Educational wellness experience

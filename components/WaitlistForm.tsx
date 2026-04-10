@@ -1,5 +1,7 @@
 "use client";
 
+import { type FormEvent, useState } from "react";
+
 type WaitlistFormProps = {
   buttonLabel?: string;
   compact?: boolean;
@@ -15,7 +17,7 @@ export default function WaitlistForm({
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setSuccess(false);

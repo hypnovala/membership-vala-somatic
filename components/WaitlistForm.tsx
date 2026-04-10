@@ -8,7 +8,7 @@ type WaitlistFormProps = {
 };
 
 export default function WaitlistForm({
-  buttonLabel = "Join the Waitlist",
+  buttonLabel = "Click Here",
   compact = false,
 }: WaitlistFormProps) {
   const [firstName, setFirstName] = useState("");
@@ -50,15 +50,14 @@ export default function WaitlistForm({
 
   return (
     <form
-      onSubmit={handleSubmit}
       className={compact ? "mt-6 grid gap-3" : "mt-8 grid gap-4 rounded-[28px] bg-white/60 p-5 ring-1 ring-[var(--vala-line)]"}
     >
       <div>
         <p className="text-lg font-semibold text-[var(--vala-deep)]">
-          Get Membership Details + 40% Off (Limited Offer)
+          Get Membership Details + 40% Off First Month
         </p>
         <p className="mt-1 text-sm text-[var(--vala-muted)]">
-          Enter your email below to receive full membership information and your limited-time 40% off first month coupon.
+          Click below to view membership details and access the limited-time first month offer.
         </p>
       </div>
 
@@ -66,16 +65,12 @@ export default function WaitlistForm({
         <input
           type="text"
           name="firstName"
-          value={firstName}
-          onChange={(event) => setFirstName(event.target.value)}
           placeholder="First name"
           className="w-full rounded-full border border-[var(--vala-line)] bg-white px-5 py-3 text-[var(--vala-deep)] outline-none transition focus:border-[var(--vala-gold)]"
         />
         <input
           type="email"
           name="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
           placeholder="Email address"
           required
           className="w-full rounded-full border border-[var(--vala-line)] bg-white px-5 py-3 text-[var(--vala-deep)] outline-none transition focus:border-[var(--vala-gold)]"
@@ -91,7 +86,7 @@ export default function WaitlistForm({
           {loading ? "Submitting..." : buttonLabel}
         </button>
         <p className="text-sm text-[var(--vala-muted)]">
-          Join the waitlist for launch updates, founding-member access, and the free Somatic Reset Guide.
+          40% off first month offer.
         </p>
       </div>
 

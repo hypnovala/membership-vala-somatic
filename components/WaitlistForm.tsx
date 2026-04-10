@@ -13,13 +13,13 @@ export default function WaitlistForm({
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setSuccess(false);
-    setError(false);
+    setErrorMessage("");
 
     try {
       const response = await fetch("/api/waitlist", {
@@ -32,15 +32,29 @@ export default function WaitlistForm({
         }),
       });
 
+      const contentType = response.headers.get("content-type") || "";
+      let message = "";
+
+      if (contentType.includes("application/json")) {
+        const data = (await response.json()) as { message?: string; success?: boolean };
+        message = data.message || "";
+      } else {
+        const rawText = await response.text();
+        console.error("Non-JSON waitlist response:", rawText);
+        throw new Error("Unexpected server response. Check the API route deployment.");
+      }
+
       if (!response.ok) {
-        throw new Error("Request failed");
+        throw new Error(message || "Request failed");
       }
 
       setSuccess(true);
       setFirstName("");
       setEmail("");
-    } catch {
-      setError(true);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -48,22 +62,33 @@ export default function WaitlistForm({
 
   return (
     <form
-      className={compact ? "mt-6 grid gap-3" : "mt-8 grid gap-4 rounded-[28px] bg-white/60 p-5 ring-1 ring-[var(--vala-line)]"}
+      onSubmit={handleSubmit}
+      className={
+        compact
+          ? "mt-6 grid gap-3"
+          : "mt-8 grid gap-4 rounded-[28px] bg-white/60 p-5 ring-1 ring-[var(--vala-line)]"
+      }
     >
       <div>
         <p className="text-lg font-semibold text-[var(--vala-deep)]">
           Get Membership Details + 40% Off First Month
         </p>
         <p className="mt-1 text-sm text-[var(--vala-muted)]">
-          Click below to view membership details and access the limited-time first month offer.
+          Enter your email to join the waitlist and receive membership details.
         </p>
       </div>
 
-      <div className={compact ? "grid gap-3 sm:grid-cols-[0.85fr_1.15fr]" : "grid gap-3 sm:grid-cols-2"}>
+      <div
+        className={
+          compact ? "grid gap-3 sm:grid-cols-[0.85fr_1.15fr]" : "grid gap-3 sm:grid-cols-2"
+        }
+      >
         <input
           type="text"
           name="firstName"
           placeholder="First name"
+          value={firstName}
+          onChange={(event) => setFirstName(event.target.value)}
           className="w-full rounded-full border border-[var(--vala-line)] bg-white px-5 py-3 text-[var(--vala-deep)] outline-none transition focus:border-[var(--vala-gold)]"
         />
         <input
@@ -71,11 +96,19 @@ export default function WaitlistForm({
           name="email"
           placeholder="Email address"
           required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
           className="w-full rounded-full border border-[var(--vala-line)] bg-white px-5 py-3 text-[var(--vala-deep)] outline-none transition focus:border-[var(--vala-gold)]"
         />
       </div>
 
-      <div className={compact ? "flex flex-col gap-3 sm:flex-row sm:items-center" : "flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"}>
+      <div
+        className={
+          compact
+            ? "flex flex-col gap-3 sm:flex-row sm:items-center"
+            : "flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+        }
+      >
         <button
           type="submit"
           disabled={loading}
@@ -83,17 +116,15 @@ export default function WaitlistForm({
         >
           {loading ? "Submitting..." : buttonLabel}
         </button>
-        <p className="text-sm text-[var(--vala-muted)]">
-          40% off first month offer.
-        </p>
+        <p className="text-sm text-[var(--vala-muted)]">40% off the first month offer.</p>
       </div>
 
       {success ? (
-        <p className="text-sm text-[#24543d]">You&apos;re in — check your email</p>
+        <p className="text-sm text-[#24543d]">You&apos;re in — check your email.</p>
       ) : null}
 
-      {error ? (
-        <p className="text-sm text-[var(--vala-burgundy)]">Something went wrong. Please try again.</p>
+      {errorMessage ? (
+        <p className="text-sm text-[var(--vala-burgundy)]">{errorMessage}</p>
       ) : null}
     </form>
   );

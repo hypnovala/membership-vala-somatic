@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
 
 type WaitlistPayload = {
   email?: string;
@@ -9,25 +9,12 @@ type WaitlistPayload = {
   inHouston?: boolean;
 };
 
-type MailSendResult = {
-  accepted?: string[];
-  rejected?: string[];
-};
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function isValidBody(body: WaitlistPayload): body is Required<Pick<WaitlistPayload, "email" | "firstName">> & WaitlistPayload {
+function isValidBody(
+  body: WaitlistPayload,
+): body is Required<Pick<WaitlistPayload, "email" | "firstName">> & WaitlistPayload {
   return typeof body.email === "string" && typeof body.firstName === "string";
-}
-
-function getTransport() {
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
 }
 
 export async function GET() {
@@ -58,16 +45,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const teamEmail = process.env.GMAIL_USER;
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const fromEmail = process.env.RESEND_FROM_EMAIL;
+    const teamEmail = process.env.WAITLIST_TEAM_EMAIL;
 
-    if (!teamEmail) {
+    if (!resendApiKey || !fromEmail || !teamEmail) {
       return NextResponse.json(
-        { success: false, message: "Waitlist email destination is not configured." },
+        {
+          success: false,
+          message: "Resend environment variables are missing.",
+        },
         { status: 500 },
       );
     }
 
-    const transport = getTransport();
+    const resend = new Resend(resendApiKey);
 
     const supportSubject = `New VALA Somatic waitlist signup: ${firstName}`;
     const supportText = [
@@ -76,7 +68,7 @@ export async function POST(request: Request) {
       `Source: ${body.source ?? "unknown"}`,
       `Membership: ${body.membershipInterest ?? "unknown"}`,
       `In Houston: ${body.inHouston ? "yes" : "no"}`,
-    ].join("\n");
+    ].join("\\n");
 
     const confirmationSubject = "Welcome to the VALA Somatic waitlist";
     const confirmationText = [
@@ -91,7 +83,8 @@ export async function POST(request: Request) {
       "",
       "With care,",
       "VALA Somatic",
-    ].join("\n");
+    ].join("\\n");
+
     const confirmationHtml = `
       <div style="margin:0;padding:0;background:#f8efea;font-family:Georgia,'Times New Roman',serif;color:#311d1b;">
         <div style="max-width:560px;margin:0 auto;padding:28px 20px;">
@@ -111,32 +104,37 @@ export async function POST(request: Request) {
       </div>
     `;
 
-    const [supportResult, confirmationResult] = (await Promise.all([
-      transport.sendMail({
-        from: teamEmail,
-        to: teamEmail,
-        subject: supportSubject,
-        text: supportText,
-      }),
-      transport.sendMail({
-        from: teamEmail,
-        to: email,
-        subject: confirmationSubject,
-        text: confirmationText,
-        html: confirmationHtml,
-      }),
-    ])) as [MailSendResult, MailSendResult];
+    const [{ error: supportError }, { data: confirmationData, error: confirmationError }] =
+      await Promise.all([
+        resend.emails.send({
+          from: fromEmail,
+          to: [teamEmail],
+          subject: supportSubject,
+          text: supportText,
+          replyTo: teamEmail,
+        }),
+        resend.emails.send({
+          from: fromEmail,
+          to: [email],
+          subject: confirmationSubject,
+          text: confirmationText,
+          html: confirmationHtml,
+          replyTo: teamEmail,
+        }),
+      ]);
 
-    const accepted = confirmationResult.accepted ?? [];
-    const rejected = confirmationResult.rejected ?? [];
+    if (supportError) {
+      console.error("Support email error:", supportError);
+    }
 
-    if (!accepted.includes(email) || rejected.includes(email)) {
+    if (confirmationError || !confirmationData?.id) {
+      console.error("Confirmation email error:", confirmationError);
+
       return NextResponse.json(
         {
           success: false,
           message:
             "Your signup was saved, but the confirmation email was not accepted for delivery.",
-          supportAccepted: supportResult.accepted ?? [],
         },
         { status: 502 },
       );
@@ -146,7 +144,9 @@ export async function POST(request: Request) {
       { success: true, message: "Thank you — check your email for details." },
       { status: 200 },
     );
-  } catch {
+  } catch (error) {
+    console.error("Waitlist API error:", error);
+
     return NextResponse.json(
       { success: false, message: "Unable to process your request right now." },
       { status: 500 },

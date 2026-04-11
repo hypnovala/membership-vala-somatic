@@ -31,6 +31,7 @@ export default function WaitlistForm({
         body: JSON.stringify({
           firstName,
           email,
+          membershipInterest,
           inHouston: false,
           membershipInterest,
         }),

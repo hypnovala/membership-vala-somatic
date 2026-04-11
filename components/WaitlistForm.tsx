@@ -13,6 +13,7 @@ export default function WaitlistForm({
 }: WaitlistFormProps) {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [membershipInterest, setMembershipInterest] = useState<"$7" | "$39">("$7");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -30,6 +31,7 @@ export default function WaitlistForm({
         body: JSON.stringify({
           firstName,
           email,
+          membershipInterest,
           inHouston: false,
         }),
       });
@@ -102,6 +104,27 @@ export default function WaitlistForm({
           onChange={(event) => setEmail(event.target.value)}
           className="w-full rounded-full border border-[var(--vala-line)] bg-white px-5 py-3 text-[var(--vala-deep)] outline-none transition focus:border-[var(--vala-gold)]"
         />
+      </div>
+
+      <div>
+        <label
+          className="mb-2 block text-sm font-medium text-[var(--vala-deep)]"
+          htmlFor="membershipInterest"
+        >
+          Membership option
+        </label>
+        <select
+          id="membershipInterest"
+          name="membershipInterest"
+          value={membershipInterest}
+          onChange={(event) =>
+            setMembershipInterest(event.target.value as "$7" | "$39")
+          }
+          className="w-full rounded-full border border-[var(--vala-line)] bg-white px-5 py-3 text-[var(--vala-deep)] outline-none transition focus:border-[var(--vala-gold)]"
+        >
+          <option value="$7">$7 Intro Offer</option>
+          <option value="$39">$39 Membership</option>
+        </select>
       </div>
 
       <div

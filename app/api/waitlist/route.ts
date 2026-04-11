@@ -37,6 +37,8 @@ export async function POST(request: Request) {
 
     const firstName = body.firstName.trim();
     const email = body.email.trim().toLowerCase();
+    const membershipInterest =
+      body.membershipInterest === "$39" ? "$39" : "$7";
 
     if (!EMAIL_REGEX.test(email)) {
       return NextResponse.json(
@@ -66,7 +68,7 @@ export async function POST(request: Request) {
       `Name: ${firstName}`,
       `Email: ${email}`,
       `Source: ${body.source ?? "unknown"}`,
-      `Membership: ${body.membershipInterest ?? "unknown"}`,
+      `Membership: ${membershipInterest}`,
       `In Houston: ${body.inHouston ? "yes" : "no"}`,
     ].join("\\n");
 

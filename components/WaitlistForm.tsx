@@ -33,7 +33,6 @@ export default function WaitlistForm({
           email,
           membershipInterest,
           inHouston: false,
-          membershipInterest,
         }),
       });
 
